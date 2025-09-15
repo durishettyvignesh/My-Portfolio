@@ -1,0 +1,84 @@
+body {
+  margin: 0;
+  font-family: 'Lora', serif;
+  background: #f9f6ef;
+  color: #4b2e1e;
+  line-height: 1.6;
+}
+
+.hero {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.hero .logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 2rem;
+  border: 2px solid #4b2e1e;
+  display: inline-block;
+  padding: 10px 20px;
+  border-radius: 50%;
+  margin-bottom: 20px;
+}
+
+.hero h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.5rem;
+}
+
+.hero h1 span {
+  color: #a9471c;
+}
+
+.hero .signature {
+  margin-top: 20px;
+  font-style: italic;
+  color: #a9471c;
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+  padding: 20px;
+  background: #a9471c;
+}
+
+.gallery img {
+  width: 100%;
+  border-radius: 8px;
+}
+
+.about {
+  padding: 40px 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 20px;
+}
+
+.about img {
+  max-width: 300px;
+  border-radius: 50%;
+}
+
+.background {
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.background .cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+}
+
+.card {
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  flex: 1;
+  min-width: 250px;
+}
