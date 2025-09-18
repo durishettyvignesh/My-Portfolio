@@ -1,0 +1,2553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Wander Buddy | Find Travel Companions</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3B82F6', // blue-500
+            secondary: '#10B981', // emerald-500
+            accent: '#F59E0B', // amber-500
+            dark: '#1F2937', // gray-800
+            light: '#F3F4F6', // gray-100
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Alpine.js for lightweight interactions -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <!-- Socket.IO for real-time chat -->
+  <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+  <!-- Swiper for carousels -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
+  <!-- Animate.css for animations -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+
+  <style id="app-style">
+    body {
+      font-family: 'Nunito', sans-serif;
+      scroll-behavior: smooth;
+    }
+    
+    h1, h2, h3, h4, h5, h6 {
+      font-family: 'Poppins', sans-serif;
+    }
+    
+    .onboarding-slide {
+      height: 100vh;
+      width: 100%;
+    }
+    
+    .slide-enter-active, .slide-leave-active {
+      transition: all 0.3s ease;
+    }
+    
+    .slide-enter-from, .slide-leave-to {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    
+    .profile-pic-placeholder {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background-color: #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .profile-pic-placeholder:hover {
+      background-color: #d1d5db;
+    }
+    
+    .match-button {
+      transition: all 0.3s ease;
+    }
+    
+    .match-button:hover {
+      transform: scale(1.05);
+    }
+    
+    .match-button:active {
+      transform: scale(0.95);
+    }
+    
+    .perfect-match {
+      background: linear-gradient(135deg, #3B82F6, #10B981);
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+      }
+    }
+    
+    .chat-message {
+      max-width: 75%;
+      margin-bottom: 12px;
+      line-height: 1.5;
+      padding: 10px 15px;
+      border-radius: 18px;
+      position: relative;
+      word-wrap: break-word;
+    }
+    
+    .message-received {
+      align-self: flex-start;
+      background: #f3f4f6;
+      color: #1f2937;
+      border-bottom-left-radius: 0;
+    }
+    
+    .message-sent {
+      align-self: flex-end;
+      background: #3B82F6;
+      color: white;
+      border-bottom-right-radius: 0;
+    }
+    
+    .attraction-card {
+      transition: all 0.3s ease;
+    }
+    
+    .attraction-card:hover {
+      transform: translateY(-5px);
+    }
+    
+    .swiper-slide {
+      height: auto;
+    }
+    
+    .hotel-card {
+      transition: all 0.3s ease;
+    }
+    
+    .hotel-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .ai-chat-toggle {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #3B82F6, #10B981);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+      z-index: 50;
+    }
+    
+    .ai-chat-toggle:hover {
+      transform: scale(1.1);
+    }
+    
+    .ai-chat-panel {
+      position: fixed;
+      bottom: 90px;
+      right: 20px;
+      width: 350px;
+      height: 500px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 40;
+      transform-origin: bottom right;
+      transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    }
+    
+    .ai-chat-hidden {
+      transform: scale(0);
+      opacity: 0;
+    }
+    
+    /* Loader animation */
+    .loader {
+      width: 48px;
+      height: 48px;
+      border: 5px solid #FFF;
+      border-bottom-color: #3B82F6;
+      border-radius: 50%;
+      display: inline-block;
+      box-sizing: border-box;
+      animation: rotation 1s linear infinite;
+    }
+
+    @keyframes rotation {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+    
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: #f3f4f6;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: #9ca3af;
+      border-radius: 3px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: #6b7280;
+    }
+  </style>
+</head>
+
+<body class="bg-gray-50">
+  <!-- App Container -->
+  <div x-data="wanderBuddy" x-cloak class="relative min-h-screen">
+    <!-- Loading Screen -->
+    <div x-show="isLoading" class="fixed inset-0 flex items-center justify-center bg-white z-50">
+      <div class="text-center">
+        <span class="loader"></span>
+        <p class="mt-4 text-lg text-gray-600">Loading Wander Buddy...</p>
+      </div>
+    </div>
+
+    <!-- Onboarding Flow -->
+    <div x-show="currentView === 'onboarding'" class="min-h-screen">
+      <div class="container mx-auto px-4 py-8">
+        <!-- Progress Bar -->
+        <div class="w-full bg-gray-200 rounded-full h-2.5 mb-6">
+          <div class="bg-primary rounded-full h-2.5" :style="`width: ${(onboardingStep / 4) * 100}%`"></div>
+        </div>
+
+        <!-- Step 1: Welcome -->
+        <div x-show="onboardingStep === 1" class="animate__animated animate__fadeIn">
+          <div class="text-center mb-12">
+            <div class="flex justify-center mb-6">
+              <img src="https://cdn.pixabay.com/photo/2018/08/04/10/23/man-3583424_1280.jpg" alt="Travel illustration" class="h-64 rounded-lg shadow-lg">
+            </div>
+            <h1 class="text-4xl font-bold text-dark mb-3">Welcome to Wander Buddy</h1>
+            <p class="text-xl text-gray-600 mb-8">Find travel companions for your next adventure</p>
+            <button @click="onboardingStep = 2" class="bg-primary hover:bg-blue-600 text-white font-semibold py-3 px-8 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105">
+              Get Started
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 2: Basic Info -->
+        <div x-show="onboardingStep === 2" class="animate__animated animate__fadeIn">
+          <h2 class="text-3xl font-bold text-dark mb-6 text-center">Tell us about yourself</h2>
+          <div class="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-md">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="col-span-2 flex justify-center mb-4">
+                <div @click="document.getElementById('profilePicInput').click()" class="profile-pic-placeholder">
+                  <template x-if="!profile.picture">
+                    <i class="fas fa-camera text-4xl text-gray-400"></i>
+                  </template>
+                  <template x-if="profile.picture">
+                    <img :src="profile.picture" class="w-full h-full object-cover rounded-full" alt="Profile picture">
+                  </template>
+                  <input id="profilePicInput" type="file" class="hidden" accept="image/*" @change="handleProfilePicture">
+                </div>
+              </div>
+              <div class="mb-4">
+                <label class="block text-gray-700 font-medium mb-2">Full Name*</label>
+                <input type="text" x-model="profile.name" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+              </div>
+              <div class="mb-4">
+                <label class="block text-gray-700 font-medium mb-2">Age*</label>
+                <input type="number" x-model="profile.age" min="18" max="120" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+              </div>
+              <div class="mb-4">
+                <label class="block text-gray-700 font-medium mb-2">Gender (Optional)</label>
+                <select x-model="profile.gender" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                  <option value="">Prefer not to say</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="non-binary">Non-binary</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div class="mb-4">
+                <label class="block text-gray-700 font-medium mb-2">Languages Spoken*</label>
+                <input type="text" x-model="profile.languages" placeholder="English, Spanish, etc." class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+              </div>
+              <div class="col-span-2 mb-4">
+                <label class="block text-gray-700 font-medium mb-2">Interests*</label>
+                <textarea x-model="profile.interests" rows="3" placeholder="Hiking, photography, food, culture..." class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
+              </div>
+            </div>
+            <div class="flex justify-between mt-6">
+              <button @click="onboardingStep = 1" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 text-gray-600 font-medium">
+                Back
+              </button>
+              <button @click="validateAndProceed()" class="px-6 py-2 bg-primary hover:bg-blue-600 text-white rounded-lg font-medium">
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Travel Preferences -->
+        <div x-show="onboardingStep === 3" class="animate__animated animate__fadeIn">
+          <h2 class="text-3xl font-bold text-dark mb-6 text-center">Your Travel Preferences</h2>
+          <div class="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-md">
+            <div class="mb-6">
+              <label class="block text-gray-700 font-medium mb-2">Travel Style (Select all that apply)</label>
+              <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div class="flex items-center">
+                  <input id="budget" type="checkbox" value="budget" x-model="profile.travelPrefs.style" class="w-4 h-4 text-primary">
+                  <label for="budget" class="ml-2">Budget</label>
+                </div>
+                <div class="flex items-center">
+                  <input id="luxury" type="checkbox" value="luxury" x-model="profile.travelPrefs.style" class="w-4 h-4 text-primary">
+                  <label for="luxury" class="ml-2">Luxury</label>
+                </div>
+                <div class="flex items-center">
+                  <input id="adventure" type="checkbox" value="adventure" x-model="profile.travelPrefs.style" class="w-4 h-4 text-primary">
+                  <label for="adventure" class="ml-2">Adventure</label>
+                </div>
+                <div class="flex items-center">
+                  <input id="culture" type="checkbox" value="culture" x-model="profile.travelPrefs.style" class="w-4 h-4 text-primary">
+                  <label for="culture" class="ml-2">Cultural</label>
+                </div>
+                <div class="flex items-center">
+                  <input id="relaxation" type="checkbox" value="relaxation" x-model="profile.travelPrefs.style" class="w-4 h-4 text-primary">
+                  <label for="relaxation" class="ml-2">Relaxation</label>
+                </div>
+                <div class="flex items-center">
+                  <input id="foodie" type="checkbox" value="foodie" x-model="profile.travelPrefs.style" class="w-4 h-4 text-primary">
+                  <label for="foodie" class="ml-2">Foodie</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-6">
+              <label class="block text-gray-700 font-medium mb-2">Accommodation Preferences</label>
+              <div class="grid grid-cols-2 gap-3">
+                <div class="flex items-center">
+                  <input id="hotel" type="checkbox" value="hotel" x-model="profile.travelPrefs.accommodation" class="w-4 h-4 text-primary">
+                  <label for="hotel" class="ml-2">Hotels</label>
+                </div>
+                <div class="flex items-center">
+                  <input id="hostel" type="checkbox" value="hostel" x-model="profile.travelPrefs.accommodation" class="w-4 h-4 text-primary">
+                  <label for="hostel" class="ml-2">Hostels</label>
+                </div>
+                <div class="flex items-center">
+                  <input id="airbnb" type="checkbox" value="airbnb" x-model="profile.travelPrefs.accommodation" class="w-4 h-4 text-primary">
+                  <label for="airbnb" class="ml-2">Airbnb/Rental</label>
+                </div>
+                <div class="flex items-center">
+                  <input id="camping" type="checkbox" value="camping" x-model="profile.travelPrefs.accommodation" class="w-4 h-4 text-primary">
+                  <label for="camping" class="ml-2">Camping</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-6">
+              <label class="block text-gray-700 font-medium mb-2">Trip Duration Preferences</label>
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="flex items-center">
+                  <input id="day" type="checkbox" value="day" x-model="profile.travelPrefs.duration" class="w-4 h-4 text-primary">
+                  <label for="day" class="ml-2">Day Trips</label>
+                </div>
+                <div class="flex items-center">
+                  <input id="weekend" type="checkbox" value="weekend" x-model="profile.travelPrefs.duration" class="w-4 h-4 text-primary">
+                  <label for="weekend" class="ml-2">Weekends</label>
+                </div>
+                <div class="flex items-center">
+                  <input id="week" type="checkbox" value="week" x-model="profile.travelPrefs.duration" class="w-4 h-4 text-primary">
+                  <label for="week" class="ml-2">1-2 Weeks</label>
+                </div>
+                <div class="flex items-center">
+                  <input id="long" type="checkbox" value="long" x-model="profile.travelPrefs.duration" class="w-4 h-4 text-primary">
+                  <label for="long" class="ml-2">Long Term</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex justify-between mt-8">
+              <button @click="onboardingStep = 2" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 text-gray-600 font-medium">
+                Back
+              </button>
+              <button @click="onboardingStep = 4" class="px-6 py-2 bg-primary hover:bg-blue-600 text-white rounded-lg font-medium">
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 4: Final Setup -->
+        <div x-show="onboardingStep === 4" class="animate__animated animate__fadeIn">
+          <h2 class="text-3xl font-bold text-dark mb-6 text-center">Almost there!</h2>
+          <div class="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-md">
+            <div class="mb-6">
+              <h3 class="text-xl font-semibold text-dark mb-4">Privacy Settings</h3>
+              
+              <div class="mb-4">
+                <label class="flex items-center cursor-pointer">
+                  <div class="relative">
+                    <input type="checkbox" x-model="profile.privacy.showAge" class="sr-only">
+                    <div class="block bg-gray-300 w-14 h-8 rounded-full"></div>
+                    <div :class="profile.privacy.showAge ? 'transform translate-x-6 bg-primary' : 'bg-white'" class="absolute left-1 top-1 w-6 h-6 rounded-full transition"></div>
+                  </div>
+                  <div class="ml-3 text-gray-700">Show my age to other travelers</div>
+                </label>
+              </div>
+              
+              <div class="mb-4">
+                <label class="flex items-center cursor-pointer">
+                  <div class="relative">
+                    <input type="checkbox" x-model="profile.privacy.locationSharing" class="sr-only">
+                    <div class="block bg-gray-300 w-14 h-8 rounded-full"></div>
+                    <div :class="profile.privacy.locationSharing ? 'transform translate-x-6 bg-primary' : 'bg-white'" class="absolute left-1 top-1 w-6 h-6 rounded-full transition"></div>
+                  </div>
+                  <div class="ml-3 text-gray-700">Share my general location with matches</div>
+                </label>
+              </div>
+              
+              <div class="mb-4">
+                <label class="flex items-center cursor-pointer">
+                  <div class="relative">
+                    <input type="checkbox" x-model="profile.privacy.emailNotifications" class="sr-only">
+                    <div class="block bg-gray-300 w-14 h-8 rounded-full"></div>
+                    <div :class="profile.privacy.emailNotifications ? 'transform translate-x-6 bg-primary' : 'bg-white'" class="absolute left-1 top-1 w-6 h-6 rounded-full transition"></div>
+                  </div>
+                  <div class="ml-3 text-gray-700">Receive email notifications for matches</div>
+                </label>
+              </div>
+            </div>
+            
+            <div class="mb-8">
+              <h3 class="text-xl font-semibold text-dark mb-4">About You</h3>
+              <textarea x-model="profile.bio" rows="4" placeholder="Tell other travelers a bit about yourself and what you're looking for in a travel buddy..." class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
+            </div>
+
+            <div class="flex justify-between mt-8">
+              <button @click="onboardingStep = 3" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 text-gray-600 font-medium">
+                Back
+              </button>
+              <button @click="completeOnboarding()" class="px-8 py-3 bg-primary hover:bg-blue-600 text-white rounded-lg font-bold">
+                Start Exploring
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main App after onboarding -->
+    <div x-show="currentView === 'main'">
+      <!-- Navigation Bar -->
+      <nav class="bg-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4">
+          <div class="flex justify-between h-16">
+            <div class="flex">
+              <div class="flex-shrink-0 flex items-center">
+                <h1 class="text-2xl font-bold text-primary">
+                  <i class="fas fa-compass mr-2"></i> Wander Buddy
+                </h1>
+              </div>
+            </div>
+            <div class="flex items-center">
+              <div class="hidden md:ml-6 md:flex md:items-center md:space-x-4">
+                <a @click="changeTab('discover')" :class="{'text-primary font-bold': currentTab === 'discover'}" href="javascript:void(0)" class="px-3 py-2 text-gray-700 hover:text-primary">Discover</a>
+                <a @click="changeTab('matches')" :class="{'text-primary font-bold': currentTab === 'matches'}" href="javascript:void(0)" class="px-3 py-2 text-gray-700 hover:text-primary relative">
+                  Matches
+                  <span x-show="matches.length > 0" class="absolute -top-1 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center" x-text="matches.length"></span>
+                </a>
+                <a @click="changeTab('chat')" :class="{'text-primary font-bold': currentTab === 'chat'}" href="javascript:void(0)" class="px-3 py-2 text-gray-700 hover:text-primary">Messages</a>
+                <a @click="changeTab('hotels')" :class="{'text-primary font-bold': currentTab === 'hotels'}" href="javascript:void(0)" class="px-3 py-2 text-gray-700 hover:text-primary">Hotels</a>
+              </div>
+              <div class="ml-3 relative">
+                <div @click="profileMenuOpen = !profileMenuOpen">
+                  <button class="flex items-center text-sm rounded-full focus:outline-none">
+                    <img class="h-8 w-8 rounded-full object-cover border-2 border-primary" :src="profile.picture || 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png'" alt="Profile">
+                    <span class="hidden md:block ml-2" x-text="profile.name"></span>
+                    <i class="fas fa-chevron-down ml-1 text-gray-500 text-xs"></i>
+                  </button>
+                </div>
+                <div x-show="profileMenuOpen" @click.away="profileMenuOpen = false" class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 py-1 z-30">
+                  <a @click="changeTab('profile')" href="javascript:void(0)" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Your Profile</a>
+                  <a href="javascript:void(0)" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Settings</a>
+                  <a href="javascript:void(0)" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Help</a>
+                  <div class="border-t border-gray-200 my-1"></div>
+                  <a @click="logout()" href="javascript:void(0)" class="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100">Sign out</a>
+                </div>
+              </div>
+              <!-- Mobile menu button -->
+              <div class="md:hidden ml-3">
+                <button @click="mobileMenuOpen = !mobileMenuOpen" class="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-primary focus:outline-none">
+                  <i class="fas fa-bars text-xl"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Mobile menu -->
+        <div x-show="mobileMenuOpen" class="md:hidden bg-white border-t border-gray-200">
+          <div class="pt-2 pb-3 space-y-1">
+            <a @click="changeTab('discover'); mobileMenuOpen = false" href="javascript:void(0)" class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-700 hover:bg-gray-50 hover:border-primary">Discover</a>
+            <a @click="changeTab('matches'); mobileMenuOpen = false" href="javascript:void(0)" class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-700 hover:bg-gray-50 hover:border-primary">Matches</a>
+            <a @click="changeTab('chat'); mobileMenuOpen = false" href="javascript:void(0)" class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-700 hover:bg-gray-50 hover:border-primary">Messages</a>
+            <a @click="changeTab('hotels'); mobileMenuOpen = false" href="javascript:void(0)" class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-700 hover:bg-gray-50 hover:border-primary">Hotels</a>
+            <a @click="changeTab('profile'); mobileMenuOpen = false" href="javascript:void(0)" class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-700 hover:bg-gray-50 hover:border-primary">Your Profile</a>
+          </div>
+        </div>
+      </nav>
+
+      <!-- Main Content Area -->
+      <main class="max-w-7xl mx-auto px-4 py-6">
+        <!-- Discover Tab -->
+        <div x-show="currentTab === 'discover'">
+          <div class="mb-8">
+            <h2 class="text-3xl font-bold text-dark mb-6">Discover Travel Buddies</h2>
+            <div class="bg-white rounded-xl shadow-md p-6">
+              <form @submit.prevent="searchDestination">
+                <div class="flex flex-col md:flex-row gap-4">
+                  <div class="flex-grow">
+                    <label for="destination" class="block text-sm font-medium text-gray-700 mb-1">Where are you headed?</label>
+                    <div class="relative">
+                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-search text-gray-400"></i>
+                      </div>
+                      <input type="text" id="destination" x-model="searchQuery" placeholder="City, Country or Tourist Spot" class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                  </div>
+                  <div class="md:w-1/4">
+                    <label for="travel-dates" class="block text-sm font-medium text-gray-700 mb-1">When?</label>
+                    <input type="date" id="travel-dates" x-model="travelDates" class="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary">
+                  </div>
+                  <div class="md:w-auto self-end">
+                    <button type="submit" class="w-full md:w-auto bg-primary hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-lg transition duration-300 ease-in-out">
+                      Find Travelers
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <template x-if="hasSearched">
+            <!-- Travelers Heading with count -->
+            <div class="flex justify-between items-center mb-6">
+              <h3 class="text-2xl font-semibold text-dark">Travelers to <span x-text="currentDestination" class="text-primary"></span></h3>
+              <span class="bg-primary text-white px-3 py-1 rounded-full text-sm" x-text="`${travelers.length} travelers found`"></span>
+            </div>
+          </template>
+
+          <!-- Travelers List -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" x-show="hasSearched && travelers.length > 0">
+            <template x-for="traveler in travelers" :key="traveler.id">
+              <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                <div class="relative">
+                  <img :src="traveler.picture" :alt="`${traveler.name}'s profile`" class="w-full h-48 object-cover">
+                  <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
+                    <h4 class="text-white text-xl font-bold" x-text="traveler.name"></h4>
+                    <p class="text-white text-sm opacity-90" x-text="`${traveler.age} • ${traveler.location}`"></p>
+                  </div>
+                </div>
+                <div class="p-5">
+                  <div class="flex flex-wrap gap-2 mb-4">
+                    <template x-for="interest in traveler.interests.split(',').slice(0,3)" :key="interest">
+                      <span class="bg-gray-100 text-gray-800 text-xs px-3 py-1 rounded-full" x-text="interest.trim()"></span>
+                    </template>
+                  </div>
+                  <p class="text-gray-600 mb-4 line-clamp-3" x-text="traveler.bio"></p>
+                  <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-500">
+                      <i class="fas fa-calendar-alt mr-1"></i> <span x-text="traveler.travelDates"></span>
+                    </span>
+                    <button @click="matchWithTraveler(traveler.id)" :class="traveler.matched ? 'bg-gradient-to-r from-green-400 to-primary text-white' : 'bg-primary text-white'" class="match-button px-4 py-2 rounded-lg font-medium">
+                      <template x-if="!traveler.matched">
+                        <span><i class="fas fa-handshake mr-1"></i> Match</span>
+                      </template>
+                      <template x-if="traveler.matched">
+                        <span><i class="fas fa-check mr-1"></i> Matched</span>
+                      </template>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <!-- No search results -->
+          <div x-show="hasSearched && travelers.length === 0" class="bg-white rounded-xl shadow-md p-8 text-center">
+            <img src="https://cdn.pixabay.com/photo/2018/11/13/21/43/instagram-3814051_1280.png" alt="No results" class="w-48 h-48 object-contain mx-auto mb-6">
+            <h3 class="text-2xl font-bold text-dark mb-2">No travelers found</h3>
+            <p class="text-gray-600 mb-6">We couldn't find any travelers heading to this destination. Be the first to plan a trip!</p>
+            <button class="bg-primary hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out">
+              Create Trip Plan
+            </button>
+          </div>
+
+          <!-- Attractions Section -->
+          <div x-show="hasSearched && attractions.length > 0" class="mt-12">
+            <h3 class="text-2xl font-semibold text-dark mb-6">Top Attractions in <span x-text="currentDestination" class="text-primary"></span></h3>
+            
+            <!-- Attractions Slider -->
+            <div class="swiper attractionsSwiper">
+              <div class="swiper-wrapper pb-8">
+                <template x-for="attraction in attractions" :key="attraction.id">
+                  <div class="swiper-slide">
+                    <div class="attraction-card bg-white rounded-xl shadow-md overflow-hidden h-full">
+                      <img :src="attraction.image" :alt="attraction.name" class="w-full h-48 object-cover">
+                      <div class="p-4">
+                        <h4 class="text-lg font-bold text-dark mb-1" x-text="attraction.name"></h4>
+                        <div class="flex items-center mb-2">
+                          <div class="flex">
+                            <template x-for="i in 5">
+                              <i :class="i <= attraction.rating ? 'fas fa-star text-yellow-400' : 'far fa-star text-gray-300'"></i>
+                            </template>
+                          </div>
+                          <span class="text-gray-600 text-sm ml-1" x-text="`(${attraction.reviewCount})`"></span>
+                        </div>
+                        <p class="text-gray-600 text-sm mb-3 line-clamp-2" x-text="attraction.description"></p>
+                        <div class="flex justify-between items-center">
+                          <span class="text-sm font-medium text-gray-500">
+                            <i class="fas fa-map-marker-alt mr-1 text-primary"></i> <span x-text="attraction.location"></span>
+                          </span>
+                          <a href="javascript:void(0)" class="text-primary hover:text-blue-700 text-sm font-medium">Learn more</a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+              </div>
+              <div class="swiper-pagination"></div>
+            </div>
+          </div>
+          
+          <!-- Activities Section -->
+          <div x-show="hasSearched && activities.length > 0" class="mt-12">
+            <h3 class="text-2xl font-semibold text-dark mb-6">Suggested Activities</h3>
+            
+            <!-- Activity Categories -->
+            <div class="flex flex-wrap gap-2 mb-6">
+              <button @click="activityFilter = 'all'" :class="activityFilter === 'all' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-800'" class="px-4 py-2 rounded-full font-medium transition-colors">All</button>
+              <button @click="activityFilter = 'adventure'" :class="activityFilter === 'adventure' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-800'" class="px-4 py-2 rounded-full font-medium transition-colors">Adventure</button>
+              <button @click="activityFilter = 'cultural'" :class="activityFilter === 'cultural' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-800'" class="px-4 py-2 rounded-full font-medium transition-colors">Cultural</button>
+              <button @click="activityFilter = 'food'" :class="activityFilter === 'food' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-800'" class="px-4 py-2 rounded-full font-medium transition-colors">Food</button>
+              <button @click="activityFilter = 'nature'" :class="activityFilter === 'nature' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-800'" class="px-4 py-2 rounded-full font-medium transition-colors">Nature</button>
+            </div>
+            
+            <!-- Activities Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <template x-for="activity in filteredActivities" :key="activity.id">
+                <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                  <img :src="activity.image" :alt="activity.name" class="w-full h-48 object-cover">
+                  <div class="p-5">
+                    <div class="flex justify-between items-center mb-3">
+                      <h4 class="text-lg font-bold text-dark" x-text="activity.name"></h4>
+                      <span :class="{
+                        'bg-blue-100 text-blue-700': activity.type === 'adventure',
+                        'bg-purple-100 text-purple-700': activity.type === 'cultural',
+                        'bg-orange-100 text-orange-700': activity.type === 'food',
+                        'bg-green-100 text-green-700': activity.type === 'nature'
+                      }" class="text-xs px-2 py-1 rounded-full" x-text="activity.type"></span>
+                    </div>
+                    <p class="text-gray-600 mb-4 line-clamp-3" x-text="activity.description"></p>
+                    <div class="flex justify-between items-center">
+                      <span class="text-lg font-bold text-primary" x-text="activity.price"></span>
+                      <button class="px-4 py-2 bg-primary hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition duration-300 ease-in-out">
+                        View Details
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <!-- Matches Tab -->
+        <div x-show="currentTab === 'matches'">
+          <h2 class="text-3xl font-bold text-dark mb-6">Your Matches</h2>
+          
+          <!-- Perfect Matches Section -->
+          <div class="mb-10">
+            <h3 class="text-xl font-semibold text-dark mb-4">Perfect Matches <span class="text-sm font-normal text-gray-500">(mutual connections)</span></h3>
+            
+            <div x-show="perfectMatches.length === 0" class="bg-white rounded-xl shadow-md p-8 text-center">
+              <img src="https://cdn.pixabay.com/photo/2017/01/31/15/33/butterfly-2024595_1280.png" alt="No perfect matches" class="w-32 h-32 object-contain mx-auto mb-4">
+              <h3 class="text-xl font-bold text-dark mb-2">No perfect matches yet</h3>
+              <p class="text-gray-600 mb-4">Once you and another traveler both match with each other, you'll see them here and can start chatting!</p>
+              <button @click="changeTab('discover')" class="bg-primary hover:bg-blue-600 text-white font-medium py-2 px-6 rounded-lg transition duration-300 ease-in-out">
+                Find Travelers
+              </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <template x-for="match in perfectMatches" :key="match.id">
+                <div class="bg-white rounded-xl shadow-md overflow-hidden border-2 border-primary hover:shadow-lg transition-shadow duration-300">
+                  <div class="relative">
+                    <img :src="match.picture" :alt="`${match.name}'s profile`" class="w-full h-48 object-cover">
+                    <div class="absolute top-2 right-2">
+                      <span class="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full">
+                        <i class="fas fa-check-circle mr-1"></i> Perfect Match
+                      </span>
+                    </div>
+                    <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
+                      <h4 class="text-white text-xl font-bold" x-text="match.name"></h4>
+                      <p class="text-white text-sm opacity-90" x-text="`${match.age} • ${match.location}`"></p>
+                    </div>
+                  </div>
+                  <div class="p-5">
+                    <div class="flex flex-wrap gap-2 mb-4">
+                      <template x-for="interest in match.interests.split(',').slice(0,3)" :key="interest">
+                        <span class="bg-gray-100 text-gray-800 text-xs px-3 py-1 rounded-full" x-text="interest.trim()"></span>
+                      </template>
+                    </div>
+                    <div class="flex justify-between items-center mb-4">
+                      <span class="text-sm text-gray-500">
+                        <i class="fas fa-calendar-alt mr-1"></i> <span x-text="match.travelDates"></span>
+                      </span>
+                      <span class="text-sm text-gray-500">
+                        <i class="fas fa-map-marker-alt mr-1"></i> <span x-text="match.destination"></span>
+                      </span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                      <button @click="viewProfile(match.id)" class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 text-gray-700 text-sm font-medium">
+                        View Profile
+                      </button>
+                      <button @click="startChat(match.id)" class="px-4 py-2 bg-primary hover:bg-blue-600 text-white rounded-lg text-sm font-medium">
+                        <i class="fas fa-comments mr-1"></i> Chat Now
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+          
+          <!-- Pending Matches Section -->
+          <div>
+            <h3 class="text-xl font-semibold text-dark mb-4">Pending Matches</h3>
+            
+            <div x-show="pendingMatches.length === 0" class="bg-white rounded-xl shadow-md p-8 text-center">
+              <p class="text-gray-600">No pending matches at the moment.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <template x-for="match in pendingMatches" :key="match.id">
+                <div class="bg-white rounded-xl shadow-md p-4 hover:shadow-lg transition-shadow duration-300">
+                  <div class="flex items-center mb-3">
+                    <img :src="match.picture" :alt="`${match.name}'s profile`" class="w-12 h-12 rounded-full object-cover border border-gray-200">
+                    <div class="ml-3">
+                      <h4 class="font-semibold text-dark" x-text="match.name"></h4>
+                      <p class="text-sm text-gray-500" x-text="`${match.age} • ${match.location}`"></p>
+                    </div>
+                  </div>
+                  <p class="text-sm text-gray-600 mb-3">
+                    <i class="fas fa-map-marker-alt text-primary mr-1"></i> 
+                    <span x-text="match.destination"></span> • 
+                    <span x-text="match.travelDates"></span>
+                  </p>
+                  <div class="flex gap-2">
+                    <button @click="declineMatch(match.id)" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 text-gray-700 text-sm font-medium">
+                      <i class="fas fa-times mr-1"></i> Skip
+                    </button>
+                    <button @click="acceptMatch(match.id)" class="flex-1 px-3 py-2 bg-primary hover:bg-blue-600 text-white rounded-lg text-sm font-medium">
+                      <i class="fas fa-check mr-1"></i> Match
+                    </button>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat Tab -->
+        <div x-show="currentTab === 'chat'">
+          <h2 class="text-3xl font-bold text-dark mb-6">Messages</h2>
+          
+          <div x-show="perfectMatches.length === 0" class="bg-white rounded-xl shadow-md p-8 text-center">
+            <img src="https://cdn.pixabay.com/photo/2016/11/22/11/48/chat-1849264_1280.png" alt="No messages" class="w-32 h-32 object-contain mx-auto mb-4">
+            <h3 class="text-xl font-bold text-dark mb-2">No messages yet</h3>
+            <p class="text-gray-600 mb-4">Once you have a perfect match, you can start chatting with your travel buddies!</p>
+            <button @click="changeTab('discover')" class="bg-primary hover:bg-blue-600 text-white font-medium py-2 px-6 rounded-lg transition duration-300 ease-in-out">
+              Find Travelers
+            </button>
+          </div>
+          
+          <div x-show="perfectMatches.length > 0" class="bg-white rounded-xl shadow-md overflow-hidden">
+            <div class="flex h-[600px]">
+              <!-- Chat sidebar -->
+              <div class="w-full md:w-1/3 border-r border-gray-200 flex flex-col">
+                <div class="p-4 border-b border-gray-200">
+                  <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <i class="fas fa-search text-gray-400"></i>
+                    </div>
+                    <input type="text" placeholder="Search messages" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm">
+                  </div>
+                </div>
+                <div class="overflow-y-auto flex-grow">
+                  <template x-for="match in perfectMatches" :key="match.id">
+                    <div @click="selectChat(match.id)" :class="{'bg-blue-50 border-l-4 border-primary': selectedChat === match.id}" class="flex items-center p-4 border-b border-gray-200 hover:bg-gray-50 cursor-pointer">
+                      <div class="relative">
+                        <img :src="match.picture" :alt="`${match.name}'s profile`" class="w-12 h-12 rounded-full object-cover border border-gray-200">
+                        <div x-show="match.online" class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                      </div>
+                      <div class="ml-3 flex-grow">
+                        <div class="flex justify-between items-center">
+                          <h4 class="font-semibold text-dark" x-text="match.name"></h4>
+                          <span class="text-xs text-gray-500" x-text="match.lastMessageTime || 'New'"></span>
+                        </div>
+                        <p class="text-sm text-gray-600 truncate" x-text="match.lastMessage || 'Start a conversation'"></p>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </div>
+              
+              <!-- Chat main area -->
+              <div class="hidden md:flex flex-col w-2/3" x-show="selectedChat">
+                <!-- Chat header -->
+                <div class="p-4 border-b border-gray-200 flex items-center justify-between">
+                  <div class="flex items-center">
+                    <img :src="getSelectedChatUser().picture" :alt="`${getSelectedChatUser().name}'s profile`" class="w-10 h-10 rounded-full object-cover border border-gray-200">
+                    <div class="ml-3">
+                      <h4 class="font-semibold text-dark" x-text="getSelectedChatUser().name"></h4>
+                      <p class="text-xs text-gray-500">
+                        <span x-show="getSelectedChatUser().online" class="text-green-500">● Online</span>
+                        <span x-show="!getSelectedChatUser().online" class="text-gray-500">Last seen recently</span>
+                      </p>
+                    </div>
+                  </div>
+                  <div>
+                    <button class="p-2 text-gray-500 hover:text-primary">
+                      <i class="fas fa-phone"></i>
+                    </button>
+                    <button class="p-2 text-gray-500 hover:text-primary">
+                      <i class="fas fa-video"></i>
+                    </button>
+                    <button class="p-2 text-gray-500 hover:text-primary">
+                      <i class="fas fa-info-circle"></i>
+                    </button>
+                  </div>
+                </div>
+                
+                <!-- Chat messages area -->
+                <div class="flex-grow p-4 overflow-y-auto flex flex-col" style="background-image: url('https://cdn.pixabay.com/photo/2017/07/01/19/48/background-2462431_1280.jpg'); background-size: cover; background-position: center;">
+                  <template x-if="!messages[selectedChat] || messages[selectedChat].length === 0">
+                    <div class="flex-grow flex flex-col items-center justify-center">
+                      <div class="bg-white p-6 rounded-xl shadow text-center">
+                        <i class="fas fa-comment-dots text-primary text-3xl mb-2"></i>
+                        <h4 class="font-semibold text-dark text-lg mb-2">Start a conversation</h4>
+                        <p class="text-gray-600 mb-4">Send a message to connect with your travel buddy</p>
+                        <button @click="sendIntroMessage()" class="px-4 py-2 bg-primary hover:bg-blue-600 text-white rounded-lg text-sm font-medium">
+                          Say Hello
+                        </button>
+                      </div>
+                    </div>
+                  </template>
+                  
+                  <template x-for="(message, index) in messages[selectedChat] || []" :key="index">
+                    <div :class="message.sender === 'me' ? 'flex justify-end' : 'flex justify-start'">
+                      <div :class="message.sender === 'me' ? 'message-sent' : 'message-received'" class="chat-message">
+                        <p x-text="message.text"></p>
+                        <div :class="message.sender === 'me' ? 'text-right' : ''" class="text-xs mt-1 text-gray-500" x-text="message.time"></div>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+                
+                <!-- Chat input -->
+                <div class="p-4 border-t border-gray-200 bg-white">
+                  <div class="flex items-center">
+                    <button class="p-2 text-gray-500 hover:text-primary">
+                      <i class="fas fa-paperclip"></i>
+                    </button>
+                    <input type="text" x-model="newMessage" @keyup.enter="sendMessage" placeholder="Type a message..." class="flex-grow mx-2 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary">
+                    <button @click="sendMessage" class="p-2 text-white bg-primary hover:bg-blue-600 rounded-full h-10 w-10 flex items-center justify-center">
+                      <i class="fas fa-paper-plane"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Empty state when no chat is selected -->
+              <div class="hidden md:flex flex-col items-center justify-center w-2/3 bg-gray-50" x-show="!selectedChat && perfectMatches.length > 0">
+                <img src="https://cdn.pixabay.com/photo/2016/11/30/17/10/chat-1873536_1280.png" alt="Select a chat" class="w-32 h-32 object-contain mb-4">
+                <h3 class="text-xl font-bold text-dark mb-2">Select a conversation</h3>
+                <p class="text-gray-600 text-center max-w-sm">Choose a travel buddy from the left to start or continue your conversation</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hotels Tab -->
+        <div x-show="currentTab === 'hotels'">
+          <h2 class="text-3xl font-bold text-dark mb-6">Find & Book Hotels</h2>
+          
+          <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+            <form @submit.prevent="searchHotels">
+              <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <label for="hotel-destination" class="block text-sm font-medium text-gray-700 mb-1">Destination</label>
+                  <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <i class="fas fa-map-marker-alt text-gray-400"></i>
+                    </div>
+                    <input type="text" id="hotel-destination" x-model="hotelSearch.destination" placeholder="City or Country" class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary">
+                  </div>
+                </div>
+                <div>
+                  <label for="check-in" class="block text-sm font-medium text-gray-700 mb-1">Check-in</label>
+                  <input type="date" id="check-in" x-model="hotelSearch.checkIn" class="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary">
+                </div>
+                <div>
+                  <label for="check-out" class="block text-sm font-medium text-gray-700 mb-1">Check-out</label>
+                  <input type="date" id="check-out" x-model="hotelSearch.checkOut" class="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary">
+                </div>
+                <div>
+                  <label for="guests" class="block text-sm font-medium text-gray-700 mb-1">Guests</label>
+                  <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <i class="fas fa-user text-gray-400"></i>
+                    </div>
+                    <select id="guests" x-model="hotelSearch.guests" class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary">
+                      <option value="1">1 Guest</option>
+                      <option value="2">2 Guests</option>
+                      <option value="3">3 Guests</option>
+                      <option value="4">4 Guests</option>
+                      <option value="5">5+ Guests</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div class="mt-4 flex justify-end">
+                <button type="submit" class="bg-primary hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-lg transition duration-300 ease-in-out">
+                  <i class="fas fa-search mr-2"></i> Search Hotels
+                </button>
+              </div>
+            </form>
+          </div>
+          
+          <!-- Hotel search results -->
+          <div x-show="hasSearchedHotels">
+            <!-- Results info bar -->
+            <div class="flex justify-between items-center mb-6">
+              <h3 class="text-2xl font-semibold text-dark">Hotels in <span x-text="hotelSearch.destination" class="text-primary"></span></h3>
+              <div class="flex items-center">
+                <span class="mr-4 text-gray-600">Sort by:</span>
+                <select x-model="hotelSortBy" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm">
+                  <option value="recommended">Recommended</option>
+                  <option value="price-low">Price: Low to High</option>
+                  <option value="price-high">Price: High to Low</option>
+                  <option value="rating">Rating</option>
+                </select>
+              </div>
+            </div>
+            
+            <!-- Hotel listings grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <!-- Filters sidebar -->
+              <div class="lg:col-span-1">
+                <div class="bg-white rounded-xl shadow-md p-6 sticky top-4">
+                  <h4 class="text-lg font-bold text-dark mb-4">Filters</h4>
+                  
+                  <div class="mb-6">
+                    <h5 class="font-medium text-dark mb-3">Price Range</h5>
+                    <div class="flex items-center justify-between">
+                      <span class="text-sm text-gray-600">$<span x-text="hotelFilters.price.min"></span></span>
+                      <span class="text-sm text-gray-600">$<span x-text="hotelFilters.price.max"></span></span>
+                    </div>
+                    <div class="mt-2">
+                      <input type="range" x-model="hotelFilters.price.min" min="0" max="500" step="10" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <div class="mt-2">
+                      <input type="range" x-model="hotelFilters.price.max" min="0" max="1000" step="10" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                  </div>
+                  
+                  <div class="mb-6">
+                    <h5 class="font-medium text-dark mb-3">Star Rating</h5>
+                    <div class="space-y-2">
+                      <label class="flex items-center">
+                        <input type="checkbox" x-model="hotelFilters.stars" value="5" class="w-4 h-4 text-primary">
+                        <span class="ml-2 text-yellow-400">★★★★★</span>
+                      </label>
+                      <label class="flex items-center">
+                        <input type="checkbox" x-model="hotelFilters.stars" value="4" class="w-4 h-4 text-primary">
+                        <span class="ml-2 text-yellow-400">★★★★</span>
+                      </label>
+                      <label class="flex items-center">
+                        <input type="checkbox" x-model="hotelFilters.stars" value="3" class="w-4 h-4 text-primary">
+                        <span class="ml-2 text-yellow-400">★★★</span>
+                      </label>
+                      <label class="flex items-center">
+                        <input type="checkbox" x-model="hotelFilters.stars" value="2" class="w-4 h-4 text-primary">
+                        <span class="ml-2 text-yellow-400">★★</span>
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <div class="mb-6">
+                    <h5 class="font-medium text-dark mb-3">Amenities</h5>
+                    <div class="space-y-2">
+                      <label class="flex items-center">
+                        <input type="checkbox" x-model="hotelFilters.amenities" value="wifi" class="w-4 h-4 text-primary">
+                        <span class="ml-2">Free WiFi</span>
+                      </label>
+                      <label class="flex items-center">
+                        <input type="checkbox" x-model="hotelFilters.amenities" value="breakfast" class="w-4 h-4 text-primary">
+                        <span class="ml-2">Breakfast Included</span>
+                      </label>
+                      <label class="flex items-center">
+                        <input type="checkbox" x-model="hotelFilters.amenities" value="pool" class="w-4 h-4 text-primary">
+                        <span class="ml-2">Swimming Pool</span>
+                      </label>
+                      <label class="flex items-center">
+                        <input type="checkbox" x-model="hotelFilters.amenities" value="parking" class="w-4 h-4 text-primary">
+                        <span class="ml-2">Free Parking</span>
+                      </label>
+                      <label class="flex items-center">
+                        <input type="checkbox" x-model="hotelFilters.amenities" value="gym" class="w-4 h-4 text-primary">
+                        <span class="ml-2">Fitness Center</span>
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <button @click="resetHotelFilters()" class="w-full px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 text-gray-700 text-sm font-medium">
+                      Reset Filters
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Hotel listings -->
+              <div class="lg:col-span-2">
+                <template x-if="filteredHotels.length === 0">
+                  <div class="bg-white rounded-xl shadow-md p-8 text-center">
+                    <img src="https://cdn.pixabay.com/photo/2017/01/10/23/01/hotel-1970330_1280.png" alt="No hotels found" class="w-32 h-32 object-contain mx-auto mb-4">
+                    <h3 class="text-xl font-bold text-dark mb-2">No hotels match your criteria</h3>
+                    <p class="text-gray-600 mb-4">Try adjusting your filters or search for a different destination</p>
+                    <button @click="resetHotelFilters()" class="bg-primary hover:bg-blue-600 text-white font-medium py-2 px-6 rounded-lg transition duration-300 ease-in-out">
+                      Reset Filters
+                    </button>
+                  </div>
+                </template>
+                
+                <div class="space-y-6">
+                  <template x-for="hotel in filteredHotels" :key="hotel.id">
+                    <div class="hotel-card bg-white rounded-xl shadow-md overflow-hidden">
+                      <div class="flex flex-col md:flex-row">
+                        <div class="md:w-1/3 relative">
+                          <img :src="hotel.image" :alt="hotel.name" class="w-full h-full object-cover">
+                          <div x-show="hotel.discount" class="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
+                            <span x-text="`${hotel.discount}% OFF`"></span>
+                          </div>
+                        </div>
+                        <div class="p-6 md:w-2/3">
+                          <div class="flex justify-between items-start">
+                            <div>
+                              <h4 class="text-lg font-bold text-dark mb-1" x-text="hotel.name"></h4>
+                              <div class="flex items-center mb-2">
+                                <div class="flex text-yellow-400">
+                                  <template x-for="i in parseInt(hotel.stars)">
+                                    <i class="fas fa-star"></i>
+                                  </template>
+                                  <template x-if="hotel.stars % 1 !== 0">
+                                    <i class="fas fa-star-half-alt"></i>
+                                  </template>
+                                </div>
+                                <span class="ml-2 text-sm text-gray-600" x-text="`${hotel.reviews} reviews`"></span>
+                              </div>
+                            </div>
+                            <div class="text-right">
+                              <div class="flex items-center">
+                                <template x-if="hotel.originalPrice">
+                                  <span class="text-sm text-gray-500 line-through mr-2" x-text="`$${hotel.originalPrice}`"></span>
+                                </template>
+                                <span class="text-xl font-bold text-primary" x-text="`$${hotel.price}`"></span>
+                              </div>
+                              <p class="text-xs text-gray-500">per night</p>
+                            </div>
+                          </div>
+                          
+                          <p class="text-sm text-gray-600 mb-4" x-text="hotel.location"></p>
+                          
+                          <div class="flex flex-wrap gap-2 mb-4">
+                            <template x-for="(amenity, index) in hotel.amenities.slice(0, 4)" :key="index">
+                              <span class="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full flex items-center">
+                                <i :class="{
+                                  'fas fa-wifi': amenity === 'wifi',
+                                  'fas fa-coffee': amenity === 'breakfast',
+                                  'fas fa-swimming-pool': amenity === 'pool',
+                                  'fas fa-parking': amenity === 'parking',
+                                  'fas fa-dumbbell': amenity === 'gym'
+                                }" class="mr-1"></i>
+                                <span x-text="amenity === 'wifi' ? 'Free WiFi' : 
+                                               amenity === 'breakfast' ? 'Breakfast' : 
+                                               amenity === 'pool' ? 'Pool' : 
+                                               amenity === 'parking' ? 'Parking' : 
+                                               amenity === 'gym' ? 'Fitness Center' : amenity"></span>
+                              </span>
+                            </template>
+                          </div>
+                          
+                          <div class="flex items-center justify-between">
+                            <div>
+                              <span :class="{
+                                'bg-green-100 text-green-800': hotel.availability === 'high',
+                                'bg-yellow-100 text-yellow-800': hotel.availability === 'medium',
+                                'bg-red-100 text-red-800': hotel.availability === 'low'
+                              }" class="text-xs px-2 py-1 rounded-full" x-text="hotel.availability === 'high' ? 'High Availability' : hotel.availability === 'medium' ? 'Limited Rooms' : 'Almost Full'"></span>
+                            </div>
+                            <div class="flex gap-3">
+                              <button class="px-3 py-2 border border-primary text-primary hover:bg-blue-50 rounded-lg text-sm font-medium">
+                                Details
+                              </button>
+                              <button @click="bookHotel(hotel.id)" class="px-4 py-2 bg-primary hover:bg-blue-600 text-white rounded-lg text-sm font-medium">
+                                Book Now
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Hotel featured collections -->
+          <div x-show="!hasSearchedHotels" class="mt-8">
+            <h3 class="text-2xl font-semibold text-dark mb-6">Popular Destinations</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div class="rounded-xl overflow-hidden shadow-md relative group cursor-pointer" @click="quickSearchHotels('Paris, France')">
+                <img src="https://cdn.pixabay.com/photo/2019/07/21/16/29/paris-4353082_1280.jpg" alt="Paris" class="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-500">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-4">
+                  <h4 class="text-white text-xl font-bold">Paris</h4>
+                  <p class="text-white text-sm">France</p>
+                </div>
+              </div>
+              <div class="rounded-xl overflow-hidden shadow-md relative group cursor-pointer" @click="quickSearchHotels('Tokyo, Japan')">
+                <img src="https://cdn.pixabay.com/photo/2019/06/20/10/08/tokyo-4286868_1280.jpg" alt="Tokyo" class="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-500">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-4">
+                  <h4 class="text-white text-xl font-bold">Tokyo</h4>
+                  <p class="text-white text-sm">Japan</p>
+                </div>
+              </div>
+              <div class="rounded-xl overflow-hidden shadow-md relative group cursor-pointer" @click="quickSearchHotels('New York, USA')">
+                <img src="https://cdn.pixabay.com/photo/2017/03/25/09/57/new-york-2172977_1280.jpg" alt="New York" class="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-500">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-4">
+                  <h4 class="text-white text-xl font-bold">New York</h4>
+                  <p class="text-white text-sm">United States</p>
+                </div>
+              </div>
+              <div class="rounded-xl overflow-hidden shadow-md relative group cursor-pointer" @click="quickSearchHotels('Bali, Indonesia')">
+                <img src="https://cdn.pixabay.com/photo/2018/05/21/14/45/bali-3417021_1280.jpg" alt="Bali" class="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-500">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-4">
+                  <h4 class="text-white text-xl font-bold">Bali</h4>
+                  <p class="text-white text-sm">Indonesia</p>
+                </div>
+              </div>
+            </div>
+            
+            <h3 class="text-2xl font-semibold text-dark mt-12 mb-6">Deals & Discounts</h3>
+            
+            <div class="swiper dealsSwiper">
+              <div class="swiper-wrapper pb-8">
+                <template x-for="deal in specialDeals" :key="deal.id">
+                  <div class="swiper-slide">
+                    <div class="hotel-card bg-white rounded-xl shadow-md overflow-hidden h-full">
+                      <div class="relative">
+                        <img :src="deal.image" :alt="deal.name" class="w-full h-48 object-cover">
+                        <div class="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+                          <span x-text="`${deal.discount}% OFF`"></span>
+                        </div>
+                      </div>
+                      <div class="p-4">
+                        <h4 class="text-lg font-bold text-dark mb-1" x-text="deal.name"></h4>
+                        <div class="flex items-center mb-2">
+                          <div class="flex text-yellow-400">
+                            <template x-for="i in parseInt(deal.stars)">
+                              <i class="fas fa-star"></i>
+                            </template>
+                          </div>
+                          <span class="ml-2 text-sm text-gray-600" x-text="deal.location"></span>
+                        </div>
+                        <div class="flex items-center justify-between mb-3">
+                          <div class="flex items-center">
+                            <span class="text-sm text-gray-500 line-through mr-2" x-text="`$${deal.originalPrice}`"></span>
+                            <span class="text-lg font-bold text-primary" x-text="`$${deal.price}`"></span>
+                          </div>
+                          <span class="text-sm text-gray-500">per night</span>
+                        </div>
+                        <button class="w-full py-2 bg-primary hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition duration-300 ease-in-out">
+                          View Deal
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+              </div>
+              <div class="swiper-pagination"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Profile Tab -->
+        <div x-show="currentTab === 'profile'">
+          <h2 class="text-3xl font-bold text-dark mb-6">Your Profile</h2>
+          
+          <div class="bg-white rounded-xl shadow-md overflow-hidden">
+            <div class="relative h-48 bg-gradient-to-r from-blue-400 to-primary">
+              <button class="absolute top-4 right-4 bg-white/30 hover:bg-white/50 p-2 rounded-full text-white">
+                <i class="fas fa-camera"></i>
+              </button>
+            </div>
+            
+            <div class="px-6 pb-6">
+              <div class="flex flex-col items-center -mt-20">
+                <div class="relative">
+                  <img :src="profile.picture || 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png'" class="w-36 h-36 rounded-full border-4 border-white object-cover" alt="Profile picture">
+                  <button class="absolute bottom-0 right-0 bg-primary hover:bg-blue-600 p-2 rounded-full text-white">
+                    <i class="fas fa-camera"></i>
+                  </button>
+                </div>
+                <h3 class="mt-4 text-2xl font-bold text-dark" x-text="profile.name"></h3>
+                <p class="text-gray-600">
+                  <template x-if="profile.age">
+                    <span x-text="profile.age + ' years old'"></span>
+                  </template>
+                  <template x-if="profile.gender && profile.gender !== ''">
+                    <span> • <span x-text="profile.gender"></span></span>
+                  </template>
+                </p>
+              </div>
+              
+              <div class="mt-8">
+                <div class="flex flex-wrap border-b">
+                  <button @click="profileSection = 'info'" :class="{'border-b-2 border-primary text-primary font-medium': profileSection === 'info'}" class="mr-8 py-4 text-gray-700 hover:text-primary">Basic Info</button>
+                  <button @click="profileSection = 'preferences'" :class="{'border-b-2 border-primary text-primary font-medium': profileSection === 'preferences'}" class="mr-8 py-4 text-gray-700 hover:text-primary">Travel Preferences</button>
+                  <button @click="profileSection = 'trips'" :class="{'border-b-2 border-primary text-primary font-medium': profileSection === 'trips'}" class="mr-8 py-4 text-gray-700 hover:text-primary">My Trips</button>
+                  <button @click="profileSection = 'settings'" :class="{'border-b-2 border-primary text-primary font-medium': profileSection === 'settings'}" class="py-4 text-gray-700 hover:text-primary">Settings</button>
+                </div>
+                
+                <!-- Basic Info Section -->
+                <div x-show="profileSection === 'info'" class="py-6">
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                      <input type="text" x-model="profile.name" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1">Age</label>
+                      <input type="number" x-model="profile.age" min="18" max="120" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                      <select x-model="profile.gender" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                        <option value="">Prefer not to say</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="non-binary">Non-binary</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1">Languages Spoken</label>
+                      <input type="text" x-model="profile.languages" placeholder="English, Spanish, etc." class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                    </div>
+                    <div class="md:col-span-2">
+                      <label class="block text-sm font-medium text-gray-700 mb-1">Interests</label>
+                      <textarea x-model="profile.interests" rows="3" placeholder="Hiking, photography, food, culture..." class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
+                    </div>
+                    <div class="md:col-span-2">
+                      <label class="block text-sm font-medium text-gray-700 mb-1">Bio</label>
+                      <textarea x-model="profile.bio" rows="4" placeholder="Tell other travelers about yourself..." class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
+                    </div>
+                  </div>
+                  <div class="mt-6">
+                    <button @click="saveProfile()" class="px-6 py-2 bg-primary hover:bg-blue-600 text-white rounded-lg font-medium">
+                      Save Changes
+                    </button>
+                  </div>
+                </div>
+                
+                <!-- Travel Preferences Section -->
+                <div x-show="profileSection === 'preferences'" class="py-6">
+                  <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-3">Travel Style</label>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      <div class="flex items-center">
+                        <input id="profile-budget" type="checkbox" value="budget" x-model="profile.travelPrefs.style" class="w-4 h-4 text-primary">
+                        <label for="profile-budget" class="ml-2">Budget</label>
+                      </div>
+                      <div class="flex items-center">
+                        <input id="profile-luxury" type="checkbox" value="luxury" x-model="profile.travelPrefs.style" class="w-4 h-4 text-primary">
+                        <label for="profile-luxury" class="ml-2">Luxury</label>
+                      </div>
+                      <div class="flex items-center">
+                        <input id="profile-adventure" type="checkbox" value="adventure" x-model="profile.travelPrefs.style" class="w-4 h-4 text-primary">
+                        <label for="profile-adventure" class="ml-2">Adventure</label>
+                      </div>
+                      <div class="flex items-center">
+                        <input id="profile-culture" type="checkbox" value="culture" x-model="profile.travelPrefs.style" class="w-4 h-4 text-primary">
+                        <label for="profile-culture" class="ml-2">Cultural</label>
+                      </div>
+                      <div class="flex items-center">
+                        <input id="profile-relaxation" type="checkbox" value="relaxation" x-model="profile.travelPrefs.style" class="w-4 h-4 text-primary">
+                        <label for="profile-relaxation" class="ml-2">Relaxation</label>
+                      </div>
+                      <div class="flex items-center">
+                        <input id="profile-foodie" type="checkbox" value="foodie" x-model="profile.travelPrefs.style" class="w-4 h-4 text-primary">
+                        <label for="profile-foodie" class="ml-2">Foodie</label>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-3">Accommodation Preferences</label>
+                    <div class="grid grid-cols-2 gap-3">
+                      <div class="flex items-center">
+                        <input id="profile-hotel" type="checkbox" value="hotel" x-model="profile.travelPrefs.accommodation" class="w-4 h-4 text-primary">
+                        <label for="profile-hotel" class="ml-2">Hotels</label>
+                      </div>
+                      <div class="flex items-center">
+                        <input id="profile-hostel" type="checkbox" value="hostel" x-model="profile.travelPrefs.accommodation" class="w-4 h-4 text-primary">
+                        <label for="profile-hostel" class="ml-2">Hostels</label>
+                      </div>
+                      <div class="flex items-center">
+                        <input id="profile-airbnb" type="checkbox" value="airbnb" x-model="profile.travelPrefs.accommodation" class="w-4 h-4 text-primary">
+                        <label for="profile-airbnb" class="ml-2">Airbnb/Rental</label>
+                      </div>
+                      <div class="flex items-center">
+                        <input id="profile-camping" type="checkbox" value="camping" x-model="profile.travelPrefs.accommodation" class="w-4 h-4 text-primary">
+                        <label for="profile-camping" class="ml-2">Camping</label>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-3">Trip Duration Preferences</label>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div class="flex items-center">
+                        <input id="profile-day" type="checkbox" value="day" x-model="profile.travelPrefs.duration" class="w-4 h-4 text-primary">
+                        <label for="profile-day" class="ml-2">Day Trips</label>
+                      </div>
+                      <div class="flex items-center">
+                        <input id="profile-weekend" type="checkbox" value="weekend" x-model="profile.travelPrefs.duration" class="w-4 h-4 text-primary">
+                        <label for="profile-weekend" class="ml-2">Weekends</label>
+                      </div>
+                      <div class="flex items-center">
+                        <input id="profile-week" type="checkbox" value="week" x-model="profile.travelPrefs.duration" class="w-4 h-4 text-primary">
+                        <label for="profile-week" class="ml-2">1-2 Weeks</label>
+                      </div>
+                      <div class="flex items-center">
+                        <input id="profile-long" type="checkbox" value="long" x-model="profile.travelPrefs.duration" class="w-4 h-4 text-primary">
+                        <label for="profile-long" class="ml-2">Long Term</label>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="mt-6">
+                    <button @click="saveProfile()" class="px-6 py-2 bg-primary hover:bg-blue-600 text-white rounded-lg font-medium">
+                      Save Changes
+                    </button>
+                  </div>
+                </div>
+                
+                <!-- My Trips Section -->
+                <div x-show="profileSection === 'trips'" class="py-6">
+                  <div x-show="myTrips.length === 0" class="text-center py-12">
+                    <img src="https://cdn.pixabay.com/photo/2019/05/13/10/44/travel-4199017_1280.png" alt="No trips" class="w-32 h-32 object-contain mx-auto mb-4">
+                    <h3 class="text-xl font-bold text-dark mb-2">No trips planned yet</h3>
+                    <p class="text-gray-600 mb-6">Plan your next adventure and find travel buddies to join you</p>
+                    <button @click="changeTab('discover')" class="px-6 py-2 bg-primary hover:bg-blue-600 text-white rounded-lg font-medium">
+                      Plan a Trip
+                    </button>
+                  </div>
+                  
+                  <div x-show="myTrips.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <template x-for="trip in myTrips" :key="trip.id">
+                      <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300">
+                        <div class="relative">
+                          <img :src="trip.image" :alt="trip.destination" class="w-full h-48 object-cover">
+                          <div class="absolute top-2 right-2">
+                            <span :class="{
+                              'bg-green-500': trip.status === 'confirmed',
+                              'bg-yellow-500': trip.status === 'planning',
+                              'bg-blue-500': trip.status === 'ongoing',
+                              'bg-gray-500': trip.status === 'completed'
+                            }" class="text-white text-xs font-bold px-2 py-1 rounded" x-text="trip.status"></span>
+                          </div>
+                        </div>
+                        <div class="p-4">
+                          <h4 class="text-lg font-bold text-dark mb-1" x-text="trip.destination"></h4>
+                          <p class="text-sm text-gray-600 mb-3">
+                            <i class="fas fa-calendar-alt mr-1"></i>
+                            <span x-text="trip.startDate"></span> - <span x-text="trip.endDate"></span>
+                          </p>
+                          <div class="mb-3">
+                            <div class="flex -space-x-2 overflow-hidden">
+                              <template x-for="(buddy, index) in trip.buddies" :key="index">
+                                <img :src="buddy.picture" :alt="buddy.name" class="inline-block h-8 w-8 rounded-full ring-2 ring-white" :title="buddy.name">
+                              </template>
+                              <template x-if="trip.buddyCount > trip.buddies.length">
+                                <div class="flex items-center justify-center h-8 w-8 rounded-full ring-2 ring-white bg-gray-300 text-xs font-medium">
+                                  +<span x-text="trip.buddyCount - trip.buddies.length"></span>
+                                </div>
+                              </template>
+                            </div>
+                          </div>
+                          <div class="flex justify-between items-center">
+                            <button class="px-3 py-1 border border-gray-300 rounded text-sm text-gray-700">
+                              View Details
+                            </button>
+                            <button class="px-3 py-1 bg-primary text-white rounded text-sm">
+                              Invite Buddies
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+                
+                <!-- Settings Section -->
+                <div x-show="profileSection === 'settings'" class="py-6">
+                  <div class="mb-8">
+                    <h4 class="text-lg font-semibold text-dark mb-4">Privacy Settings</h4>
+                    
+                    <div class="space-y-4">
+                      <div class="flex items-center justify-between">
+                        <label class="text-gray-700">Show my age to other travelers</label>
+                        <div class="relative">
+                          <input type="checkbox" x-model="profile.privacy.showAge" class="sr-only">
+                          <div class="block bg-gray-300 w-14 h-8 rounded-full"></div>
+                          <div :class="profile.privacy.showAge ? 'transform translate-x-6 bg-primary' : 'bg-white'" class="absolute left-1 top-1 w-6 h-6 rounded-full transition"></div>
+                        </div>
+                      </div>
+                      
+                      <div class="flex items-center justify-between">
+                        <label class="text-gray-700">Share my general location with matches</label>
+                        <div class="relative">
+                          <input type="checkbox" x-model="profile.privacy.locationSharing" class="sr-only">
+                          <div class="block bg-gray-300 w-14 h-8 rounded-full"></div>
+                          <div :class="profile.privacy.locationSharing ? 'transform translate-x-6 bg-primary' : 'bg-white'" class="absolute left-1 top-1 w-6 h-6 rounded-full transition"></div>
+                        </div>
+                      </div>
+                      
+                      <div class="flex items-center justify-between">
+                        <label class="text-gray-700">Receive email notifications for matches</label>
+                        <div class="relative">
+                          <input type="checkbox" x-model="profile.privacy.emailNotifications" class="sr-only">
+                          <div class="block bg-gray-300 w-14 h-8 rounded-full"></div>
+                          <div :class="profile.privacy.emailNotifications ? 'transform translate-x-6 bg-primary' : 'bg-white'" class="absolute left-1 top-1 w-6 h-6 rounded-full transition"></div>
+                        </div>
+                      </div>
+                      
+                      <div class="flex items-center justify-between">
+                        <label class="text-gray-700">Allow others to find me in search results</label>
+                        <div class="relative">
+                          <input type="checkbox" x-model="profile.privacy.searchable" class="sr-only">
+                          <div class="block bg-gray-300 w-14 h-8 rounded-full"></div>
+                          <div :class="profile.privacy.searchable ? 'transform translate-x-6 bg-primary' : 'bg-white'" class="absolute left-1 top-1 w-6 h-6 rounded-full transition"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="mb-8">
+                    <h4 class="text-lg font-semibold text-dark mb-4">Account Settings</h4>
+                    
+                    <div class="space-y-4">
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                        <input type="email" value="user@example.com" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                      </div>
+                      
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                        <input type="tel" placeholder="Add a phone number" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                      </div>
+                      
+                      <div>
+                        <button class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                          Change Password
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 class="text-lg font-semibold text-dark mb-4">Danger Zone</h4>
+                    <div class="space-y-4 border border-red-200 rounded-lg p-4 bg-red-50">
+                      <p class="text-sm text-gray-700">This action will deactivate your account and remove your profile from search results.</p>
+                      <button class="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-100">
+                        Deactivate Account
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- AI Chat Assistant Button and Panel -->
+      <div class="ai-chat-toggle" @click="aiChatOpen = !aiChatOpen">
+        <i class="fas fa-robot text-2xl"></i>
+      </div>
+      
+      <div :class="{'ai-chat-hidden': !aiChatOpen}" class="ai-chat-panel">
+        <div class="flex items-center justify-between bg-primary text-white p-4">
+          <h4 class="font-bold">WanderBuddy AI Assistant</h4>
+          <button @click="aiChatOpen = false" class="text-white hover:text-gray-200">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <div class="flex-grow p-4 overflow-y-auto flex flex-col" style="background-color: #f5f7fb;">
+          <div x-show="aiMessages.length === 0" class="text-center my-8">
+            <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <i class="fas fa-robot text-primary text-2xl"></i>
+            </div>
+            <h5 class="font-semibold text-dark mb-2">How can I help you today?</h5>
+            <p class="text-sm text-gray-600 mb-4">Ask me about travel recommendations, trip planning, or finding travel buddies.</p>
+          </div>
+          
+          <template x-for="(message, index) in aiMessages" :key="index">
+            <div :class="message.sender === 'ai' ? 'flex justify-start' : 'flex justify-end'" class="mb-4">
+              <div :class="message.sender === 'ai' ? 'bg-white text-gray-800' : 'bg-primary text-white'" class="max-w-[85%] rounded-lg px-4 py-2 shadow-sm">
+                <p x-text="message.text"></p>
+              </div>
+            </div>
+          </template>
+          
+          <div x-show="isAiTyping" class="flex justify-start mb-4">
+            <div class="bg-white text-gray-800 max-w-[85%] rounded-lg px-4 py-3 shadow-sm">
+              <div class="flex space-x-2">
+                <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="p-3 border-t border-gray-200 bg-white">
+          <div class="flex items-center">
+            <input type="text" x-model="aiInputMessage" @keyup.enter="sendAiMessage" placeholder="Ask me anything..." class="flex-grow px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary">
+            <button @click="sendAiMessage" class="ml-2 p-2 bg-primary hover:bg-blue-600 text-white rounded-full h-10 w-10 flex items-center justify-center">
+              <i class="fas fa-paper-plane"></i>
+            </button>
+          </div>
+          <div class="flex flex-wrap gap-2 mt-2">
+            <button @click="quickAiMessage('Find travel buddies')" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-800 px-2 py-1 rounded-full">
+              Find travel buddies
+            </button>
+            <button @click="quickAiMessage('Hotel recommendations')" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-800 px-2 py-1 rounded-full">
+              Hotel recommendations
+            </button>
+            <button @click="quickAiMessage('Travel safety tips')" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-800 px-2 py-1 rounded-full">
+              Travel safety tips
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script id="app-script">
+    document.addEventListener('alpine:init', () => {
+      Alpine.data('wanderBuddy', () => ({
+        isLoading: true,
+        currentView: 'onboarding',
+        onboardingStep: 1,
+        currentTab: 'discover',
+        profileMenuOpen: false,
+        mobileMenuOpen: false,
+        profileSection: 'info',
+        
+        // Backend connection
+        apiBase: 'http://localhost:3001/api',
+        socket: null,
+        currentUserId: null,
+        
+        // AI Chat
+        aiChatOpen: false,
+        aiInputMessage: '',
+        aiMessages: [],
+        isAiTyping: false,
+
+        // Search states
+        searchQuery: '',
+        travelDates: '',
+        currentDestination: '',
+        hasSearched: false,
+        activityFilter: 'all',
+        
+        // Chat states
+        selectedChat: null,
+        newMessage: '',
+        messages: {},
+        
+        // Hotel search
+        hotelSearch: {
+          destination: '',
+          checkIn: '',
+          checkOut: '',
+          guests: '2'
+        },
+        hotelSortBy: 'recommended',
+        hasSearchedHotels: false,
+        hotelFilters: {
+          price: {
+            min: 50,
+            max: 300
+          },
+          stars: [],
+          amenities: []
+        },
+        
+        profile: {
+          name: '',
+          age: '',
+          gender: '',
+          languages: '',
+          interests: '',
+          picture: '',
+          bio: '',
+          travelPrefs: {
+            style: [],
+            accommodation: [],
+            duration: []
+          },
+          privacy: {
+            showAge: true,
+            locationSharing: true,
+            emailNotifications: true,
+            searchable: true
+          }
+        },
+        
+        travelers: [],
+        matches: [],
+        perfectMatches: [],
+        pendingMatches: [],
+        attractions: [],
+        activities: [],
+        hotels: [],
+        specialDeals: [],
+        myTrips: [],
+        
+        init() {
+          // Simulate loading delay
+          setTimeout(() => {
+            this.isLoading = false;
+            
+            // Check if user has completed onboarding
+            const savedProfile = localStorage.getItem('wanderBuddy_profile');
+            if (savedProfile) {
+              this.profile = JSON.parse(savedProfile);
+              this.currentView = 'main';
+              this.initializeApp();
+            }
+          }, 1500);
+        },
+        
+        async initializeApp() {
+          // Load profile from localStorage if exists
+          const savedProfile = localStorage.getItem('wanderBuddy_profile');
+          const savedUserId = localStorage.getItem('wanderBuddy_userId');
+          if (savedProfile) {
+            this.profile = JSON.parse(savedProfile);
+            this.currentUserId = savedUserId;
+          }
+          
+          // Initialize Socket.IO connection
+          if (this.currentUserId) {
+            this.socket = io('http://localhost:3001', {
+              query: { userId: this.currentUserId }
+            });
+            
+            this.socket.on('receive_message', (message) => {
+              // Add received message to chat
+              if (!this.messages[message.senderId]) {
+                this.messages[message.senderId] = [];
+              }
+              this.messages[message.senderId].push({
+                sender: 'them',
+                text: message.content,
+                time: new Date(message.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+              });
+              
+              // Update last message in match object
+              const matchIndex = this.perfectMatches.findIndex(m => m.id === message.senderId);
+              if (matchIndex !== -1) {
+                this.perfectMatches[matchIndex].lastMessage = message.content;
+                this.perfectMatches[matchIndex].lastMessageTime = 'Now';
+              }
+              
+              this.scrollChatToBottom();
+            });
+          }
+          
+          // Initialize swipers after the main view is rendered
+          setTimeout(() => {
+            if (document.querySelector('.attractionsSwiper')) {
+              new Swiper('.attractionsSwiper', {
+                slidesPerView: 1,
+                spaceBetween: 16,
+                pagination: {
+                  el: '.swiper-pagination',
+                  clickable: true,
+                },
+                breakpoints: {
+                  640: {
+                    slidesPerView: 2,
+                  },
+                  1024: {
+                    slidesPerView: 4,
+                  },
+                },
+              });
+            }
+            
+            if (document.querySelector('.dealsSwiper')) {
+              new Swiper('.dealsSwiper', {
+                slidesPerView: 1,
+                spaceBetween: 16,
+                pagination: {
+                  el: '.swiper-pagination',
+                  clickable: true,
+                },
+                breakpoints: {
+                  640: {
+                    slidesPerView: 2,
+                  },
+                  1024: {
+                    slidesPerView: 4,
+                  },
+                },
+              });
+            }
+          }, 100);
+          
+          // Initialize sample data
+          this.specialDeals = this.getSampleSpecialDeals();
+          
+          // Simulate welcome message from AI
+          setTimeout(() => {
+            this.aiMessages.push({
+              sender: 'ai',
+              text: `Hi ${this.profile.name}! I'm your WanderBuddy AI Assistant. How can I help with your travel plans today?`
+            });
+          }, 2000);
+        },
+        
+        validateAndProceed() {
+          if (!this.profile.name || !this.profile.age || !this.profile.languages || !this.profile.interests) {
+            alert('Please fill in all required fields');
+            return;
+          }
+          this.onboardingStep = 3;
+        },
+        
+        async completeOnboarding() {
+          try {
+            // Save profile to backend
+            const response = await fetch(`${this.apiBase}/users`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(this.profile)
+            });
+            const user = await response.json();
+            this.currentUserId = user.id;
+            
+            // Save to localStorage as backup
+            localStorage.setItem('wanderBuddy_profile', JSON.stringify(this.profile));
+            localStorage.setItem('wanderBuddy_userId', user.id);
+            
+            this.currentView = 'main';
+            this.initializeApp();
+          } catch (error) {
+            console.error('Failed to save profile:', error);
+            alert('Failed to save profile. Please try again.');
+          }
+        },
+        
+        handleProfilePicture(event) {
+          const file = event.target.files[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              this.profile.picture = e.target.result;
+            };
+            reader.readAsDataURL(file);
+          }
+        },
+        
+        changeTab(tab) {
+          this.currentTab = tab;
+          this.mobileMenuOpen = false;
+        },
+        
+        saveProfile() {
+          // Save updated profile to localStorage
+          localStorage.setItem('wanderBuddy_profile', JSON.stringify(this.profile));
+          
+          // Show success notification
+          alert('Profile updated successfully');
+        },
+        
+        logout() {
+          if (confirm('Are you sure you want to log out?')) {
+            localStorage.removeItem('wanderBuddy_profile');
+            this.currentView = 'onboarding';
+            this.onboardingStep = 1;
+          }
+        },
+        
+        async searchDestination() {
+          if (!this.searchQuery) {
+            alert('Please enter a destination');
+            return;
+          }
+          
+          this.isLoading = true;
+          this.currentDestination = this.searchQuery;
+          this.hasSearched = true;
+          
+          try {
+            // Load travelers from backend
+            const response = await fetch(`${this.apiBase}/users`);
+            const users = await response.json();
+            this.travelers = users.map(user => ({
+              id: user.id,
+              name: user.name,
+              age: user.age,
+              location: user.location || 'Unknown',
+              picture: user.picture || 'https://via.placeholder.com/150',
+              interests: user.interests,
+              bio: `Interests: ${user.interests}`,
+              travelDates: 'Aug 15 - Aug 25', // Mock data
+              matched: false
+            }));
+            
+            // Keep sample attractions and activities for now
+            this.attractions = this.getSampleAttractions();
+            this.activities = this.getSampleActivities();
+            this.isLoading = false;
+          } catch (error) {
+            console.error('Failed to load travelers:', error);
+            this.travelers = this.getSampleTravelers();
+            this.attractions = this.getSampleAttractions();
+            this.activities = this.getSampleActivities();
+            this.isLoading = false;
+          }
+        },
+        
+        async matchWithTraveler(travelerId) {
+          const travelerIndex = this.travelers.findIndex(t => t.id === travelerId);
+          if (travelerIndex !== -1) {
+            this.travelers[travelerIndex].matched = true;
+            
+            try {
+              // Create match in backend
+              await fetch(`${this.apiBase}/matches`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  userId: this.currentUserId,
+                  buddyId: travelerId
+                })
+              });
+              
+              // Add to matches array
+              const traveler = this.travelers[travelerIndex];
+              this.matches.push(travelerId);
+              
+              // Simulate chance of mutual match
+              if (Math.random() > 0.5) {
+                setTimeout(() => {
+                  this.createPerfectMatch(traveler);
+                }, 2000 + Math.random() * 3000);
+              }
+            } catch (error) {
+              console.error('Failed to create match:', error);
+              alert('Failed to create match. Please try again.');
+            }
+          }
+        },
+        
+        createPerfectMatch(traveler) {
+          // Add to perfect matches
+          this.perfectMatches.push({
+            id: traveler.id,
+            name: traveler.name,
+            age: traveler.age,
+            location: traveler.location,
+            picture: traveler.picture,
+            interests: traveler.interests,
+            destination: this.currentDestination,
+            travelDates: traveler.travelDates,
+            online: Math.random() > 0.5,
+            lastMessage: '',
+            lastMessageTime: ''
+          });
+          
+          // Remove from pending matches if it's there
+          this.pendingMatches = this.pendingMatches.filter(match => match.id !== traveler.id);
+          
+          // Show notification
+          alert(`Congratulations! You have a perfect match with ${traveler.name}!`);
+        },
+        
+        acceptMatch(matchId) {
+          const matchIndex = this.pendingMatches.findIndex(m => m.id === matchId);
+          if (matchIndex !== -1) {
+            const match = this.pendingMatches[matchIndex];
+            // Create perfect match
+            this.createPerfectMatch(match);
+          }
+        },
+        
+        declineMatch(matchId) {
+          // Remove from pending matches
+          this.pendingMatches = this.pendingMatches.filter(match => match.id !== matchId);
+        },
+        
+        viewProfile(matchId) {
+          alert('This feature will be implemented in the future version.');
+        },
+        
+        startChat(matchId) {
+          this.changeTab('chat');
+          this.selectedChat = matchId;
+        },
+        
+        selectChat(chatId) {
+          this.selectedChat = chatId;
+        },
+        
+        getSelectedChatUser() {
+          return this.perfectMatches.find(match => match.id === this.selectedChat) || {};
+        },
+        
+        sendIntroMessage() {
+          if (!this.selectedChat) return;
+          
+          // Initialize messages array for this chat if needed
+          if (!this.messages[this.selectedChat]) {
+            this.messages[this.selectedChat] = [];
+          }
+          
+          // Add user message
+          this.messages[this.selectedChat].push({
+            sender: 'me',
+            text: `Hi there! I'm planning to visit ${this.currentDestination}. Would be great to connect and maybe meet up!`,
+            time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+          });
+          
+          // Update last message in match object
+          const matchIndex = this.perfectMatches.findIndex(m => m.id === this.selectedChat);
+          if (matchIndex !== -1) {
+            this.perfectMatches[matchIndex].lastMessage = 'Hi there! I\'m planning to...';
+            this.perfectMatches[matchIndex].lastMessageTime = 'Now';
+          }
+          
+          // Simulate reply
+          setTimeout(() => {
+            this.messages[this.selectedChat].push({
+              sender: 'them',
+              text: `Hey ${this.profile.name}! Nice to connect! I'm also excited about visiting ${this.currentDestination}. When are you planning to go?`,
+              time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+            });
+            
+            // Update last message in match object
+            if (matchIndex !== -1) {
+              this.perfectMatches[matchIndex].lastMessage = 'Hey! Nice to connect!...';
+              this.perfectMatches[matchIndex].lastMessageTime = 'Now';
+            }
+          }, 2000);
+        },
+        
+        async sendMessage() {
+          if (!this.newMessage.trim() || !this.selectedChat) return;
+          
+          // Initialize messages array for this chat if needed
+          if (!this.messages[this.selectedChat]) {
+            this.messages[this.selectedChat] = [];
+          }
+          
+          const messageText = this.newMessage.trim();
+          
+          try {
+            // Send message via Socket.IO
+            if (this.socket) {
+              this.socket.emit('send_message', {
+                senderId: this.currentUserId,
+                recipientId: this.selectedChat,
+                content: messageText
+              });
+            }
+            
+            // Add message to chat immediately
+            this.messages[this.selectedChat].push({
+              sender: 'me',
+              text: messageText,
+              time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+            });
+            
+            // Update last message in match object
+            const matchIndex = this.perfectMatches.findIndex(m => m.id === this.selectedChat);
+            if (matchIndex !== -1) {
+              this.perfectMatches[matchIndex].lastMessage = messageText;
+              this.perfectMatches[matchIndex].lastMessageTime = 'Now';
+            }
+            
+            // Clear input
+            this.newMessage = '';
+            
+            // Scroll to bottom
+            this.scrollChatToBottom();
+          } catch (error) {
+            console.error('Failed to send message:', error);
+            alert('Failed to send message. Please try again.');
+          }
+        },
+        
+        scrollChatToBottom() {
+          // This would be implemented to scroll the chat
+        },
+        
+        getRandomReply() {
+          const replies = [
+            "That sounds great! I'd love to join you.",
+            "Have you been there before? It's my first time visiting.",
+            "I heard the local cuisine is amazing. We should try some restaurants together.",
+            "What attractions are on your must-see list?",
+            "I'm flexible with the itinerary. Happy to explore together!",
+            "Do you know any good hotels in the area?",
+            "Looking forward to meeting you!"
+          ];
+          return replies[Math.floor(Math.random() * replies.length)];
+        },
+        
+        searchHotels() {
+          if (!this.hotelSearch.destination) {
+            alert('Please enter a destination');
+            return;
+          }
+          
+          this.isLoading = true;
+          this.hasSearchedHotels = true;
+          
+          // Simulate API call
+          setTimeout(() => {
+            this.hotels = this.getSampleHotels();
+            this.isLoading = false;
+          }, 1000);
+        },
+        
+        quickSearchHotels(destination) {
+          this.hotelSearch.destination = destination;
+          this.searchHotels();
+        },
+        
+        resetHotelFilters() {
+          this.hotelFilters = {
+            price: {
+              min: 50,
+              max: 300
+            },
+            stars: [],
+            amenities: []
+          };
+        },
+        
+        bookHotel(hotelId) {
+          alert('Hotel booking functionality will be implemented in the future version.');
+        },
+        
+        sendAiMessage() {
+          if (!this.aiInputMessage.trim()) return;
+          
+          // Add user message
+          this.aiMessages.push({
+            sender: 'user',
+            text: this.aiInputMessage
+          });
+          
+          // Clear input
+          const userMessage = this.aiInputMessage;
+          this.aiInputMessage = '';
+          
+          // Show typing indicator
+          this.isAiTyping = true;
+          
+          // Simulate AI response
+          setTimeout(() => {
+            this.isAiTyping = false;
+            
+            // Add AI response based on user message
+            this.aiMessages.push({
+              sender: 'ai',
+              text: this.getAiResponse(userMessage)
+            });
+          }, 1500 + Math.random() * 1500);
+        },
+        
+        quickAiMessage(message) {
+          this.aiInputMessage = message;
+          this.sendAiMessage();
+        },
+        
+        getAiResponse(message) {
+          // Simple response logic based on keywords
+          message = message.toLowerCase();
+          
+          if (message.includes('hello') || message.includes('hi ')) {
+            return `Hello ${this.profile.name}! How can I help you with your travel plans today?`;
+          } else if (message.includes('hotel') || message.includes('accommodation')) {
+            return "I can help you find hotels! You can search for hotels in the Hotels tab, or tell me your destination and budget, and I'll provide some recommendations.";
+          } else if (message.includes('buddy') || message.includes('companion') || message.includes('travel with')) {
+            return "Looking for travel buddies? The best way is to search for your destination in the Discover tab. You'll see other travelers heading to the same place, and you can match with them!";
+          } else if (message.includes('safety') || message.includes('safe')) {
+            return "Travel safety is important! Here are some tips: 1) Research your destination before going, 2) Keep digital copies of important documents, 3) Share your itinerary with someone you trust, 4) Use verified accommodations, and 5) Always meet new travel buddies in public places first.";
+          } else if (message.includes('recommend') || message.includes('suggestion')) {
+            return "Based on your interests in " + this.profile.interests + ", you might enjoy destinations like Japan for cultural experiences, New Zealand for adventure, or Italy for food and history. Would you like specific recommendations for any of these?";
+          } else {
+            return "Thanks for your message! I'm here to help with finding travel buddies, hotel recommendations, safety tips, and planning your trips. Is there something specific you'd like to know?";
+          }
+        },
+        
+        get filteredActivities() {
+          if (this.activityFilter === 'all') return this.activities;
+          return this.activities.filter(activity => activity.type === this.activityFilter);
+        },
+        
+        get filteredHotels() {
+          let filtered = [...this.hotels];
+          
+          // Filter by price range
+          filtered = filtered.filter(hotel => 
+            hotel.price >= this.hotelFilters.price.min &&
+            hotel.price <= this.hotelFilters.price.max
+          );
+          
+          // Filter by star rating
+          if (this.hotelFilters.stars.length > 0) {
+            filtered = filtered.filter(hotel => 
+              this.hotelFilters.stars.includes(Math.floor(hotel.stars).toString())
+            );
+          }
+          
+          // Filter by amenities
+          if (this.hotelFilters.amenities.length > 0) {
+            filtered = filtered.filter(hotel => 
+              this.hotelFilters.amenities.every(amenity => 
+                hotel.amenities.includes(amenity)
+              )
+            );
+          }
+          
+          // Sort hotels
+          filtered = filtered.sort((a, b) => {
+            if (this.hotelSortBy === 'price-low') {
+              return a.price - b.price;
+            } else if (this.hotelSortBy === 'price-high') {
+              return b.price - a.price;
+            } else if (this.hotelSortBy === 'rating') {
+              return b.stars - a.stars;
+            }
+            // Default: recommended
+            return 0;
+          });
+          
+          return filtered;
+        },
+        
+        // Sample data generators
+        getSampleTravelers() {
+          return [
+            {
+              id: 1,
+              name: 'Emma Johnson',
+              age: 28,
+              location: 'London, UK',
+              picture: 'https://cdn.pixabay.com/photo/2015/01/08/18/29/entrepreneur-593358_1280.jpg',
+              interests: 'Photography, Hiking, Local Cuisine',
+              bio: 'Adventure seeker and photography enthusiast. Love to explore off-the-beaten-path destinations and capture moments through my lens.',
+              travelDates: 'Aug 15 - Aug 25',
+              matched: false
+            },
+            {
+              id: 2,
+              name: 'Miguel Santos',
+              age: 32,
+              location: 'Barcelona, Spain',
+              picture: 'https://cdn.pixabay.com/photo/2016/11/21/12/42/beard-1845166_1280.jpg',
+              interests: 'Cultural Tours, Music, Food',
+              bio: 'Food lover and cultural explorer. Always up for trying local delicacies and attending cultural events. Fluent in Spanish and English.',
+              travelDates: 'Aug 18 - Aug 30',
+              matched: false
+            },
+            {
+              id: 3,
+              name: 'Sophia Chen',
+              age: 26,
+              location: 'Toronto, Canada',
+              picture: 'https://cdn.pixabay.com/photo/2017/02/16/23/10/smile-2072907_1280.jpg',
+              interests: 'Museums, Art, Coffee Shops',
+              bio: 'Art history graduate with a passion for museums and local cafes. Looking for fellow art enthusiasts to explore galleries and cultural sites.',
+              travelDates: 'Aug 10 - Aug 22',
+              matched: false
+            },
+            {
+              id: 4,
+              name: 'Alex Morgan',
+              age: 30,
+              location: 'Sydney, Australia',
+              picture: 'https://cdn.pixabay.com/photo/2017/08/06/06/43/people-2589324_1280.jpg',
+              interests: 'Surfing, Beach, Nightlife',
+              bio: 'Beach lover and surfing enthusiast. Looking to catch some waves and enjoy the local nightlife scene. Open to exploring coastal towns.',
+              travelDates: 'Aug 20 - Sep 5',
+              matched: false
+            },
+            {
+              id: 5,
+              name: 'Olivia Kim',
+              age: 27,
+              location: 'Seoul, South Korea',
+              picture: 'https://cdn.pixabay.com/photo/2018/01/15/07/51/woman-3083386_1280.jpg',
+              interests: 'Shopping, Street Food, Temple Visits',
+              bio: 'Fashion blogger and foodie. Excited to explore markets, try street food, and visit historical temples. Speaks Korean and English.',
+              travelDates: 'Aug 15 - Aug 28',
+              matched: false
+            },
+            {
+              id: 6,
+              name: 'David Miller',
+              age: 35,
+              location: 'Chicago, USA',
+              picture: 'https://cdn.pixabay.com/photo/2015/01/12/10/45/man-597046_1280.jpg',
+              interests: 'Architecture Tours, Jazz Music, History',
+              bio: 'History buff and architecture enthusiast. Love learning about local history and enjoying live music venues. Former tour guide.',
+              travelDates: 'Aug 12 - Aug 24',
+              matched: false
+            }
+          ];
+        },
+        
+        getSampleAttractions() {
+          return [
+            {
+              id: 1,
+              name: 'Crystal Clear Beach',
+              image: 'https://cdn.pixabay.com/photo/2016/11/08/05/20/sunset-1807524_1280.jpg',
+              rating: 5,
+              reviewCount: '2,453',
+              description: 'Pristine white sand beach with crystal clear waters. Perfect for swimming, snorkeling and watching stunning sunsets.',
+              location: 'West Bay'
+            },
+            {
+              id: 2,
+              name: 'Ancient City Ruins',
+              image: 'https://cdn.pixabay.com/photo/2019/06/13/13/07/amphitheater-4271628_1280.jpg',
+              rating: 4,
+              reviewCount: '1,876',
+              description: 'Explore the fascinating remains of a 2000-year-old civilization with guided tours available throughout the day.',
+              location: 'Old Quarter'
+            },
+            {
+              id: 3,
+              name: 'Mountain Peak Trail',
+              image: 'https://cdn.pixabay.com/photo/2015/07/09/22/45/tree-838667_1280.jpg',
+              rating: 5,
+              reviewCount: '3,112',
+              description: 'Scenic hiking trail with breathtaking views of the surrounding valleys and lakes. Suitable for moderate hikers.',
+              location: 'Northern Range'
+            },
+            {
+              id: 4,
+              name: 'Cultural Museum',
+              image: 'https://cdn.pixabay.com/photo/2016/01/09/18/27/old-1130731_1280.jpg',
+              rating: 4,
+              reviewCount: '956',
+              description: 'Comprehensive collection of artifacts showcasing the rich cultural heritage of the region. Audio guides available.',
+              location: 'City Center'
+            },
+            {
+              id: 5,
+              name: 'Waterfall Gardens',
+              image: 'https://cdn.pixabay.com/photo/2014/10/07/13/48/mountain-477832_1280.jpg',
+              rating: 5,
+              reviewCount: '2,756',
+              description: 'Beautiful botanical gardens featuring stunning waterfalls, exotic plants, and butterfly conservatory.',
+              location: 'Eastern Valley'
+            },
+            {
+              id: 6,
+              name: 'Traditional Market',
+              image: 'https://cdn.pixabay.com/photo/2016/10/22/15/31/spices-1761506_1280.jpg',
+              rating: 4,
+              reviewCount: '1,543',
+              description: 'Vibrant local market offering fresh produce, handcrafted souvenirs, and authentic street food experiences.',
+              location: 'Harbor District'
+            }
+          ];
+        },
+        
+        getSampleActivities() {
+          return [
+            {
+              id: 1,
+              name: 'Guided Snorkeling Tour',
+              image: 'https://cdn.pixabay.com/photo/2016/11/08/05/22/adventure-1807524_1280.jpg',
+              type: 'adventure',
+              description: '3-hour guided snorkeling experience through coral reefs teeming with colorful marine life. All equipment provided.',
+              price: '$45 per person'
+            },
+            {
+              id: 2,
+              name: 'Historical Walking Tour',
+              image: 'https://cdn.pixabay.com/photo/2018/03/10/16/51/prague-3215560_1280.jpg',
+              type: 'cultural',
+              description: 'Explore the city\'s rich history with a knowledgeable local guide. Visit key landmarks and hidden gems.',
+              price: '$30 per person'
+            },
+            {
+              id: 3,
+              name: 'Street Food Safari',
+              image: 'https://cdn.pixabay.com/photo/2019/03/24/14/25/thailand-4077834_1280.jpg',
+              type: 'food',
+              description: 'Taste your way through the most delicious street food stalls with insights into local culinary traditions.',
+              price: '$55 per person'
+            },
+            {
+              id: 4,
+              name: 'Sunset Kayaking',
+              image: 'https://cdn.pixabay.com/photo/2016/11/18/15/16/kayak-1835154_1280.jpg',
+              type: 'adventure',
+              description: 'Paddle through calm waters while enjoying a spectacular sunset. Perfect for beginners and experienced kayakers.',
+              price: '$40 per person'
+            },
+            {
+              id: 5,
+              name: 'Traditional Cooking Class',
+              image: 'https://cdn.pixabay.com/photo/2015/03/26/10/07/restaurant-690975_1280.jpg',
+              type: 'food',
+              description: 'Learn to prepare authentic local dishes with a professional chef. Includes market tour and meal.',
+              price: '$65 per person'
+            },
+            {
+              id: 6,
+              name: 'Temple Meditation Session',
+              image: 'https://cdn.pixabay.com/photo/2014/07/16/05/18/buddha-394227_1280.jpg',
+              type: 'cultural',
+              description: 'Experience tranquility with a guided meditation session in an ancient temple. Suitable for all levels.',
+              price: '$25 per person'
+            },
+            {
+              id: 7,
+              name: 'Mountain Biking Adventure',
+              image: 'https://cdn.pixabay.com/photo/2016/11/18/15/37/biking-1835506_1280.jpg',
+              type: 'adventure',
+              description: 'Exhilarating mountain bike tour through scenic trails with varying difficulty levels. Bikes and safety gear included.',
+              price: '$55 per person'
+            },
+            {
+              id: 8,
+              name: 'Botanical Garden Tour',
+              image: 'https://cdn.pixabay.com/photo/2017/08/01/08/29/people-2563491_1280.jpg',
+              type: 'nature',
+              description: 'Guided walk through stunning botanical gardens featuring native plants and exotic species. Great for photography.',
+              price: '$20 per person'
+            },
+            {
+              id: 9,
+              name: 'Wildlife Safari',
+              image: 'https://cdn.pixabay.com/photo/2018/01/19/14/40/nature-3092964_1280.jpg',
+              type: 'nature',
+              description: 'Early morning wildlife spotting tour with experienced naturalist guides. Binoculars and refreshments provided.',
+              price: '$75 per person'
+            }
+          ];
+        },
+        
+        getSampleHotels() {
+          return [
+            {
+              id: 1,
+              name: 'Ocean View Resort & Spa',
+              image: 'https://cdn.pixabay.com/photo/2016/11/17/09/28/hotel-1831072_1280.jpg',
+              location: 'Beachfront, Central District',
+              stars: 5,
+              price: 245,
+              originalPrice: 310,
+              discount: 21,
+              reviews: 453,
+              amenities: ['wifi', 'pool', 'breakfast', 'parking', 'gym'],
+              availability: 'high'
+            },
+            {
+              id: 2,
+              name: 'City Center Boutique Hotel',
+              image: 'https://cdn.pixabay.com/photo/2016/11/18/22/21/restaurant-1837150_1280.jpg',
+              location: 'Downtown, Shopping District',
+              stars: 4,
+              price: 175,
+              reviews: 287,
+              amenities: ['wifi', 'breakfast', 'parking'],
+              availability: 'medium'
+            },
+            {
+              id: 3,
+              name: 'Mountain View Lodge',
+              image: 'https://cdn.pixabay.com/photo/2016/03/28/09/34/bedroom-1285156_1280.jpg',
+              location: 'Northern Hills, 5 miles from center',
+              stars: 4.5,
+              price: 195,
+              reviews: 320,
+              amenities: ['wifi', 'pool', 'parking', 'gym'],
+              availability: 'high'
+            },
+            {
+              id: 4,
+              name: 'Budget Traveler Inn',
+              image: 'https://cdn.pixabay.com/photo/2016/10/18/09/02/hotel-1749602_1280.jpg',
+              location: 'West Side, 2 miles from center',
+              stars: 3,
+              price: 85,
+              originalPrice: 110,
+              discount: 23,
+              reviews: 512,
+              amenities: ['wifi', 'parking'],
+              availability: 'high'
+            },
+            {
+              id: 5,
+              name: 'Historic Grand Hotel',
+              image: 'https://cdn.pixabay.com/photo/2019/05/28/00/15/indoors-4234071_1280.jpg',
+              location: 'Old Town, City Center',
+              stars: 5,
+              price: 325,
+              reviews: 178,
+              amenities: ['wifi', 'pool', 'breakfast', 'parking', 'gym'],
+              availability: 'low'
+            },
+            {
+              id: 6,
+              name: 'Riverside Comfort Inn',
+              image: 'https://cdn.pixabay.com/photo/2016/04/15/11/48/hotel-1330850_1280.jpg',
+              location: 'River District, 1 mile from center',
+              stars: 3.5,
+              price: 120,
+              originalPrice: 150,
+              discount: 20,
+              reviews: 395,
+              amenities: ['wifi', 'breakfast', 'parking'],
+              availability: 'medium'
+            }
+          ];
+        },
+        
+        getSampleSpecialDeals() {
+          return [
+            {
+              id: 1,
+              name: 'Sunset Beach Resort',
+              image: 'https://cdn.pixabay.com/photo/2016/10/13/09/06/travel-1737168_1280.jpg',
+              location: 'Bali, Indonesia',
+              stars: 5,
+              price: 175,
+              originalPrice: 250,
+              discount: 30
+            },
+            {
+              id: 2,
+              name: 'Alpine Lodge & Spa',
+              image: 'https://cdn.pixabay.com/photo/2017/01/14/12/48/hotel-1979406_1280.jpg',
+              location: 'Swiss Alps, Switzerland',
+              stars: 4,
+              price: 220,
+              originalPrice: 275,
+              discount: 20
+            },
+            {
+              id: 3,
+              name: 'Metropolitan Suites',
+              image: 'https://cdn.pixabay.com/photo/2016/11/18/17/20/living-room-1835923_1280.jpg',
+              location: 'New York, USA',
+              stars: 4,
+              price: 195,
+              originalPrice: 260,
+              discount: 25
+            },
+            {
+              id: 4,
+              name: 'Sakura Boutique Hotel',
+              image: 'https://cdn.pixabay.com/photo/2019/04/23/09/04/indoor-4148894_1280.jpg',
+              location: 'Tokyo, Japan',
+              stars: 4.5,
+              price: 185,
+              originalPrice: 230,
+              discount: 20
+            },
+            {
+              id: 5,
+              name: 'Mediterranean Villa',
+              image: 'https://cdn.pixabay.com/photo/2016/09/18/03/28/travel-1677347_1280.jpg',
+              location: 'Santorini, Greece',
+              stars: 5,
+              price: 320,
+              originalPrice: 450,
+              discount: 29
+            },
+          ];
+        }
+      }));
+    });
+  </script>
+</body>
+</html>
